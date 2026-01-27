@@ -1,0 +1,32 @@
+.student-dash-bg
+{
+   margin-top: 70px;
+  align-items: center;
+  justify-content: center;
+ background-image:url(../assets/dash2.jpg);
+ background-size: cover;
+  padding: 20px;
+ height: 300px;
+}
+.student-dash-welcome
+{
+    margin-top: 70px;
+    font-size: 38px;
+  font-weight: 900;
+  color: rgb(65, 9, 194);
+  margin-bottom: 40px;
+  text-align: center;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.student-dash-intro
+{
+     font-size: 20px;
+  font-weight: 900;
+  color: rgb(0, 0, 0);
+  margin-bottom: 40px;
+  text-align: center;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  margin-top: -30px;
+}
+
+
