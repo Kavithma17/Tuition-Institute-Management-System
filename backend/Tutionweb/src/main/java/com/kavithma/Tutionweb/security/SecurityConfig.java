@@ -27,13 +27,18 @@ public class SecurityConfig {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
+
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public:
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/register").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/courses/**").permitAll()
                         .requestMatchers("/api/teachers/**").permitAll()
+                        .requestMatchers("/api/notes/**").authenticated()
+                        .requestMatchers("/api/todos/**").authenticated()
+                        .requestMatchers("/api/reminders/**").authenticated()
 
                         // Protected:
                         .requestMatchers("/api/enrollments/**").authenticated()

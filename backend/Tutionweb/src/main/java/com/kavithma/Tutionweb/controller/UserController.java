@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173") // your React frontend port
+@CrossOrigin(origins = "http://localhost:5174") // your React frontend port
 public class UserController {
 
     @Autowired

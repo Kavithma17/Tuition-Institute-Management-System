@@ -1,0 +1,87 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.5rem;
+  z-index: 50;
+}
+
+.navbar-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-logo a {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color:var(--primary-blue);
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: none;
+}
+
+.navbar-link {
+  margin-left: 1.5rem;
+  color: #4b5563; 
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.navbar-link:hover {
+  color: #2f58d4; 
+  
+}
+
+.navbar-button {
+  display: none;
+}
+
+.get-started-btn {
+  background-color:var(--primary-blue);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.get-started-btn:hover {
+  background-color: #2f58d4;
+}
+
+.navbar-hamburger {
+  display: block;
+}
+
+
+@media (min-width: 768px) {
+  .navbar-links {
+    display: flex;
+  }
+
+  .navbar-button {
+    display: block;
+  }
+
+  .navbar-hamburger {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .navbar-links,
+  .navbar-button {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: flex;
+  }
+}

@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}) // Allow frontend calls
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5174"}) // Allow frontend calls
 public class DashboardController {
 
     @Autowired

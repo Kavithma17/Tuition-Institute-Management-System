@@ -1,0 +1,157 @@
+/* General page styles */
+
+.admin-dashboard
+{
+  padding: 0 50px;
+}
+.admin-dashboard h1{
+  margin-top: 80px;
+  color: #060fb9;
+  margin-bottom: -50px;
+  text-align: center;
+}
+.page-container {
+  
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Section headings */
+h2 {
+  color: #004c99;
+  text-align: center;
+  margin-bottom: 15px;
+ 
+  padding-bottom: 5px;
+}
+
+/* Forms */
+.course-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+  
+}
+
+form input, form select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  flex: 1;
+
+}
+
+form button {
+  background-color: #3b27d3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  
+}
+
+form button:hover {
+  background-color: #0056b3;
+}
+
+/* Tables */
+.course-table {
+  width: 100%;
+  border-collapse: collapse;
+  
+}
+
+.course-table th, .course-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.course-table th {
+  background-color: #6552f6;
+  color: white;
+}
+
+.course-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.course-table a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.course-table a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons inside table */
+.course-table button {
+  background-color: #ff4d4d;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.course-table button:hover {
+  background-color: #cc0000;
+}
+
+.course-table button:first-child {
+  background-color: #28a745;
+}
+
+.course-table button:first-child:hover {
+  background-color: #1e7e34;
+}
+
+/* Dropdown styling */
+select {
+  padding: 10px 15px;
+  border: 2px solid #007bff;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-size: 16px;
+  color: #004c99;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Hover effect */
+select:hover {
+  border-color: #0056b3;
+  background-color: #f0f6ff;
+}
+
+/* Focus effect */
+select:focus {
+  border-color: #004c99;
+  box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+}
+
+/* Option styling */
+select option {
+  padding: 10px;
+}
+
+.gohome
+{
+  padding: 10px 15px;
+  border: 2px solid #007bff;
+  border-radius: 6px;
+  background-color: #ffffff;
+  font-size: 16px;
+  color: #004c99;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+
+}
