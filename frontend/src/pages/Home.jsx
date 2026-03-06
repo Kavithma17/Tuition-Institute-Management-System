@@ -118,8 +118,8 @@ const Home = () => {
 
       {/* RIGHT: Images */}
       <div className="about-images reveal reveal-right delay-3">
-        <img src="src/assets/about1.jpg" alt="Success Story 1" />
-        <img src="src/assets/about2.jpg" alt="Success Story 2" />
+        <img src="/assets/about1.jpg" alt="Success Story 1" />
+        <img src="/assets/about2.jpg" alt="Success Story 2" />
       </div>
 
     </div>
@@ -317,7 +317,7 @@ const Home = () => {
           <div className="testimonial-card reveal reveal-left delay-4">
             <div className="testimonial-header">
               <div className="student-photo">
-                <img src="src/assets/g1.jpg" alt="Kavindi Perera" />
+                <img src="/assets/g1.jpg" alt="Kavindi Perera" />
                 <div className="photo-ring"></div>
               </div>
               <div className="student-details">
@@ -338,7 +338,7 @@ const Home = () => {
           <div className="testimonial-card reveal reveal-left delay-5">
             <div className="testimonial-header">
               <div className="student-photo">
-                <img src="src/assets/b1.jpg" alt="Ravindu Silva" />
+                <img src="/assets/b1.jpg" alt="Ravindu Silva" />
                 <div className="photo-ring"></div>
               </div>
               <div className="student-details">
@@ -380,7 +380,7 @@ const Home = () => {
     <div className="photo-gallery">
       <div className="gallery-row row-1">
         <div className="photo-item large-photo reveal delay-2">
-          <img src="src/assets/f.jpg" alt="Main Campus" />
+          <img src="/assets/f.jpg" alt="Main Campus" />
           <div className="photo-overlay">
             <h3>Main Building</h3>
             <p>Modern facilities with latest technology</p>
@@ -389,22 +389,22 @@ const Home = () => {
 
         <div className="photo-column">
           <div className="photo-item reveal delay-3">
-            <img src="src/assets/f2.jpg" alt="Physics Lab" />
+            <img src="/assets/f2.jpg" alt="Physics Lab" />
             <div className="photo-overlay"><h4>Physics Lab</h4></div>
           </div>
 
           <div className="photo-item reveal delay-4">
-            <img src="src/assets/f4.jpg" alt="Chemistry Lab" />
+            <img src="/assets/f4.jpg" alt="Chemistry Lab" />
             <div className="photo-overlay"><h4>Chemistry Lab</h4></div>
           </div>
         </div>
       </div>
 
       <div className="gallery-row row-2">
-        <div className="photo-item reveal delay-2"><img src="src/assets/f3.jpg" /></div>
-        <div className="photo-item reveal delay-3"><img src="src/assets/f5.jpg" /></div>
-        <div className="photo-item reveal delay-4"><img src="src/assets/classroom.jpg" /></div>
-        <div className="photo-item reveal delay-5"><img src="src/assets/f6.jpg" /></div>
+        <div className="photo-item reveal delay-2"><img src="/assets/f3.jpg" /></div>
+        <div className="photo-item reveal delay-3"><img src="/assets/f5.jpg" /></div>
+        <div className="photo-item reveal delay-4"><img src="/assets/classroom.jpg" /></div>
+        <div className="photo-item reveal delay-5"><img src="/assets/f6.jpg" /></div>
       </div>
     </div>
 
@@ -460,7 +460,7 @@ const Home = () => {
               
             </div>
             <div className="contact-form-container">
-              <img src="src/assets/one.jpg"/>
+              <img src="/assets/one.jpg"/>
             </div>
           </div>
         </div>

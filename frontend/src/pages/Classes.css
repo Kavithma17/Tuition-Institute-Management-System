@@ -36,7 +36,7 @@
   left: 0;
   height: 100%;
   width: 100%;
-  background-image: url(../assets/class1.jpg);
+  background-image: url(/assets/class1.jpg);
   background-size: cover;
   background-position: center;
   /* opacity: 0.6;  adjust this for more/less fade */

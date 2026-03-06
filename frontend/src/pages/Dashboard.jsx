@@ -4,6 +4,7 @@ import "./Dashboard.css";
 import axiosClient from "../api/axiosClient";
 import { generateALQuiz } from "../api/generateALQuiz";
 import { jsPDF } from "jspdf";
+import { resolvePublicUrl } from "../utils/resolvePublicUrl";
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -679,7 +680,7 @@ const fetchReminders = async () => {
                         <div className="card-image">
                           <div className="card-badge" aria-hidden="true">{idx + 1}</div>
                           <img
-                            src={c.photourl || "/placeholder.svg"}
+                            src={resolvePublicUrl(c.photourl, { fallback: "/assets/class.jpg" })}
                             alt={c.classname}
                             loading="lazy"
                           />
@@ -734,7 +735,7 @@ const fetchReminders = async () => {
             <div className="card-image">
               <div className="card-badge" aria-hidden="true">{idx + 1}</div>
               <img
-                src={e.course?.photourl || "/placeholder.svg"}
+                src={resolvePublicUrl(e.course?.photourl, { fallback: "/assets/class.jpg" })}
                 alt={e.course?.classname}
               />
             </div>

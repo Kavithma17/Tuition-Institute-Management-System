@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { initScrollReveal } from "../hooks/scrollReveal";
 import { initCountUp } from "../hooks/scrollReveal";
+import { resolvePublicUrl } from "../utils/resolvePublicUrl";
 
 const Classes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,7 +20,7 @@ const Classes = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const res = await axios.get("api/courses");
+        const res = await axios.get("/api/courses");
         setCourses(res.data);
       } catch (err) {
         setError("Failed to fetch courses.");
@@ -50,7 +51,7 @@ const Classes = () => {
         <div key={classItem.id} className="class-card">
           <div className="card-image">
             <img
-              src={classItem.photourl || "/placeholder.svg"}
+              src={resolvePublicUrl(classItem.photourl, { fallback: "/assets/class.jpg" })}
               alt={classItem.classname}
               loading="lazy"
             />

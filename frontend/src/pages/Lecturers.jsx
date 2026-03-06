@@ -3,6 +3,7 @@ import axios from "axios";
 import "./Lecturers.css";
 import Footer from "../components/Footer";
 import { initScrollReveal } from "../hooks/scrollReveal";
+import { resolvePublicUrl } from "../utils/resolvePublicUrl";
 
 const Lecturers = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,7 +77,7 @@ const Lecturers = () => {
                     <div key={lecturer.id} className="lecturer-card ">
                       <div className="lecturer-image-container">
                         <img
-                          src={lecturer.photoUrl || "/placeholder.svg"}
+                          src={resolvePublicUrl(lecturer.photoUrl, { fallback: "/assets/lec.jpg" })}
                           alt={lecturer.name}
                           className="lecturer-photo"
                         />

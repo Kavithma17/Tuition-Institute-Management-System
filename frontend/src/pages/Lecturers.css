@@ -306,7 +306,7 @@ html {
 
 /* header */
 .lectures-header {
-  background-image: url(../assets/lec6.png);
+  background-image: url(/assets/lec6.png);
   background-size: cover;
   color: rgb(0, 0, 0);
   padding: 120px 0 80px 20px;

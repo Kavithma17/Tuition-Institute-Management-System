@@ -15,7 +15,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
- background-image:url(../assets/log7.jpg) ;
+ background-image:url(/assets/log7.jpg) ;
  background-size: cover;
   padding: 20px;
 }
