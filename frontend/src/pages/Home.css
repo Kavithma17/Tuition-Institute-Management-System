@@ -135,7 +135,7 @@ body {
 
 /* Hero Section */
 .hero {
-  background-image:url(../assets/c7.jpg) ;
+  background-image:url(/assets/c7.jpg) ;
    
   margin-top: 70px;
   padding: 140px 0 100px;
@@ -574,7 +574,7 @@ section {
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* Subjects Section */
 .subjects-grid {
-    background-image:url(../assets/subject1.jpg);
+  background-image:url(/assets/subject1.jpg);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* responsive columns */
   gap: 5rem;                     /* equal spacing between items */

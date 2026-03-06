@@ -48,7 +48,7 @@ margin-top: 40px;}/* Container to limit width and center */
   line-height: 1.6;
 }
 .lectures-header2 {
-  background-image: url(../assets/image.png);
+  background-image: url(/assets/image.png);
   background-size: cover;
   color: rgb(0, 0, 0);
   padding: 120px 0 80px 20px;
@@ -208,7 +208,7 @@ margin-top: 40px;}/* Container to limit width and center */
 /* FAQ Section */
 .faq {
   padding: 80px 20px;
-  background-image:url(../assets/q3.jpg) ;
+  background-image:url(/assets/q3.jpg) ;
   text-align: center;
   background-size: cover;
   margin-bottom: -20px;

@@ -3,6 +3,7 @@ import axios from "axios";
 import "./Admindashboard.css";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer"
+import { resolvePublicUrl } from "../utils/resolvePublicUrl";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -267,7 +268,7 @@ const AdminDashboard = () => {
         <table className="course-table">
           <thead><tr><th>Name</th><th>Qualification</th><th>Subject</th><th>Photo</th><th>Actions</th></tr></thead>
           <tbody>
-            {teachers.map(t => <tr key={t.id}><td>{t.name}</td><td>{t.qualification}</td><td>{t.subject}</td><td>{t.photoUrl ? <img src={t.photoUrl} width="50" /> : "No Photo"}</td><td>
+            {teachers.map(t => <tr key={t.id}><td>{t.name}</td><td>{t.qualification}</td><td>{t.subject}</td><td>{t.photoUrl ? <img src={resolvePublicUrl(t.photoUrl, { fallback: "/assets/lec.jpg" })} width="50" /> : "No Photo"}</td><td>
               <button onClick={() => { scrollToSection(teacherSectionRef); setEditingTeacherId(t.id); setTeacherForm(t); }}>Edit</button>
               <button onClick={() => handleDelete("/api/teachers", t.id, fetchTeachers)}>Delete</button>
             </td></tr>)}
@@ -289,7 +290,7 @@ const AdminDashboard = () => {
         <table className="course-table">
           <thead><tr><th>Name</th><th>Month</th><th>Price</th><th>Teacher</th><th>Image</th><th>Actions</th></tr></thead>
           <tbody>
-            {courses.map(c => <tr key={c.id}><td>{c.classname}</td><td>{c.month}</td><td>{c.price}</td><td>{c.teachername}</td><td>{c.photourl ? <img src={c.photourl} width="50" /> : "No Image"}</td><td>
+            {courses.map(c => <tr key={c.id}><td>{c.classname}</td><td>{c.month}</td><td>{c.price}</td><td>{c.teachername}</td><td>{c.photourl ? <img src={resolvePublicUrl(c.photourl, { fallback: "/assets/class.jpg" })} width="50" /> : "No Image"}</td><td>
               <button onClick={() => { scrollToSection(courseSectionRef); setEditingCourseId(c.id); setCourseForm(c); }}>Edit</button>
               <button onClick={() => handleDelete("/api/courses", c.id, fetchCourses)}>Delete</button>
             </td></tr>)}
