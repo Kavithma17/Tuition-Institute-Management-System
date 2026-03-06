@@ -5,6 +5,14 @@ import axiosClient from "../api/axiosClient";
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOption, setSortOption] = useState(() => {
+    try {
+      return localStorage.getItem("dashboard.sort.all") || "none";
+    } catch {
+      return "none";
+    }
+  });
+  const [enrolledSearchTerm, setEnrolledSearchTerm] = useState("");
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +41,28 @@ const [reminders, setReminders] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [payLoading, setPayLoading] = useState(false);
 
+  const [enrollNotice, setEnrollNotice] = useState(null);
+
+  // Settings
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [settingsEmail, setSettingsEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState(null);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("dashboard.sort.all", sortOption);
+    } catch {
+      // ignore
+    }
+  }, [sortOption]);
 
   useEffect(() => {
     fetchCourses();
@@ -43,6 +72,78 @@ const [reminders, setReminders] = useState([]);
    fetchNotes();
     // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    if (activeMenu !== "settings") return;
+    fetchProfile();
+    // eslint-disable-next-line
+  }, [activeMenu]);
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setProfile(null);
+      setProfileError("Please login first.");
+      return;
+    }
+
+    try {
+      setProfileLoading(true);
+      setProfileError(null);
+      const res = await axiosClient.get("/api/users/dashboard");
+      setProfile(res.data);
+      setSettingsEmail(res.data?.email || "");
+    } catch (e) {
+      console.error("Failed to load profile", e);
+      setProfileError("Failed to load profile.");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const saveSettings = async (e) => {
+    e.preventDefault();
+    setSettingsMessage(null);
+
+    const email = settingsEmail.trim();
+    const wantsPasswordChange = newPassword.trim().length > 0 || confirmPassword.trim().length > 0;
+
+    if (wantsPasswordChange) {
+      if (!currentPassword.trim()) {
+        setSettingsMessage({ type: "error", text: "Current password is required." });
+        return;
+      }
+      if (newPassword.trim().length < 6) {
+        setSettingsMessage({ type: "error", text: "New password must be at least 6 characters." });
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setSettingsMessage({ type: "error", text: "New password and confirm password do not match." });
+        return;
+      }
+    }
+
+    try {
+      setSettingsSaving(true);
+      const payload = {
+        email,
+        currentPassword: wantsPasswordChange ? currentPassword : "",
+        newPassword: wantsPasswordChange ? newPassword : "",
+      };
+
+      const res = await axiosClient.put("/api/users/settings", payload);
+      setProfile((prev) => ({ ...prev, email: res.data?.email ?? email }));
+      setSettingsMessage({ type: "success", text: "Settings updated successfully." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      const msg = err?.response?.data || "Failed to update settings.";
+      setSettingsMessage({ type: "error", text: String(msg) });
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const fetchNotes = async () => {
   try {
@@ -242,8 +343,7 @@ const fetchReminders = async () => {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login first!");
-      navigate("/login");
+      setEnrollNotice({ type: "error", text: "Please login first.", redirectTo: "/login" });
       return;
     }
 
@@ -254,24 +354,81 @@ const fetchReminders = async () => {
         `/api/enrollments?courseId=${selectedCourse.id}&month=${encodeURIComponent(selectedMonth)}`
       );
 
-      alert("✅ Enrolled Successfully!");
+      setEnrollNotice({ type: "success", text: "Enrolled successfully!" });
       closePayModal();
       fetchMyEnrollments();
       setActiveMenu("enrolled");
     } catch (e) {
-      const msg =
-        e?.response?.data || "Enrollment failed (maybe already enrolled).";
-      alert(msg);
+      setEnrollNotice({ type: "error", text: "You are already enrolled for this month." });
       setPayLoading(false);
     }
+  };
+
+  const closeEnrollNotice = () => {
+    const redirectTo = enrollNotice?.redirectTo;
+    setEnrollNotice(null);
+    if (redirectTo) navigate(redirectTo);
   };
 
   const filteredCourses = courses.filter((course) =>
     course.classname?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const sortedCourses = (() => {
+    const list = filteredCourses.slice();
+    const safeText = (v) => String(v || "").toLowerCase();
+
+    switch (sortOption) {
+      case "price_asc":
+        return list.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+      case "price_desc":
+        return list.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+      case "month":
+        return list.sort((a, b) => safeText(a.month).localeCompare(safeText(b.month)));
+      case "teacher":
+        return list.sort((a, b) => safeText(a.teachername).localeCompare(safeText(b.teachername)));
+      default:
+        return list;
+    }
+  })();
+
+  const enrolledFiltered = (() => {
+    const q = enrolledSearchTerm.trim().toLowerCase();
+    if (!q) return enrollments;
+
+    return enrollments.filter((e) => {
+      const courseName = (e.course?.classname || "").toLowerCase();
+      const teacherName = (e.course?.teachername || "").toLowerCase();
+      const month = (e.month || "").toLowerCase();
+      const status = (e.status || "").toLowerCase();
+      return (
+        courseName.includes(q) ||
+        teacherName.includes(q) ||
+        month.includes(q) ||
+        status.includes(q)
+      );
+    });
+  })();
+
   return (
     <div className="dashboard-layout">
+      {enrollNotice && (
+        <div className="enroll-popup-overlay" onClick={closeEnrollNotice}>
+          <div
+            className={`enroll-popup ${enrollNotice.type}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Enrollment message"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="enroll-popup-text">{enrollNotice.text}</div>
+            <button type="button" className="enroll-popup-btn" onClick={closeEnrollNotice}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ===== Sidebar ===== */}
       <aside className="sidebar">
         <div className="sidebar-title">Dashboard</div>
@@ -307,6 +464,13 @@ const fetchReminders = async () => {
           >
             To-Do
           </li>
+
+          <li
+            className={activeMenu === "settings" ? "active" : ""}
+            onClick={() => setActiveMenu("settings")}
+          >
+            Settings
+          </li>
         </ul>
 
         <button
@@ -330,14 +494,35 @@ const fetchReminders = async () => {
             <p>Find your ideal classes and get ready to excel!</p>
 
             {activeMenu === "all" && (
-              <input
-                type="search"
-                placeholder="Search classes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input"
-                aria-label="Search classes"
-              />
+              <div className="dashboard-controls">
+                <input
+                  type="search"
+                  placeholder="Search classes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                  aria-label="Search classes"
+                />
+
+                <div className="sort-wrap">
+                  <label className="sort-label" htmlFor="sortAll">
+                    Sort by
+                  </label>
+                  <select
+                    id="sortAll"
+                    className="sort-select"
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    aria-label="Sort all classes"
+                  >
+                    <option value="none">Default</option>
+                    <option value="price_asc">Price (low to high)</option>
+                    <option value="price_desc">Price (high to low)</option>
+                    <option value="month">Month</option>
+                    <option value="teacher">Teacher</option>
+                  </select>
+                </div>
+              </div>
             )}
           </header>
 
@@ -349,7 +534,7 @@ const fetchReminders = async () => {
 
                 {!loading && !error && (
                   <div className="classes-grid">
-                    {filteredCourses.map((c, idx) => (
+                    {sortedCourses.map((c, idx) => (
                       <div key={c.id} className="class-card">
                         <div className="card-image">
                           <div className="card-badge" aria-hidden="true">{idx + 1}</div>
@@ -389,11 +574,20 @@ const fetchReminders = async () => {
   <div className="enrolled-wrap">
     <h2 className="section-title">Your Enrolled Classes</h2>
 
-    {enrollments.length === 0 ? (
+    <input
+      type="search"
+      className="enrolled-search"
+      placeholder="Search enrolled classes..."
+      value={enrolledSearchTerm}
+      onChange={(e) => setEnrolledSearchTerm(e.target.value)}
+      aria-label="Search enrolled classes"
+    />
+
+    {enrolledFiltered.length === 0 ? (
       <p className="muted">No enrollments yet.</p>
     ) : (
       <div className="classes-grid">
-        {enrollments.map((e, idx) => (
+        {enrolledFiltered.map((e, idx) => (
           <div key={e.id} className="class-card enrolled-card">
             
             {/* Course Image */}
@@ -649,6 +843,90 @@ const fetchReminders = async () => {
                         </li>
                       ))}
                   </ul>
+                )}
+              </div>
+            )}
+
+            {activeMenu === "settings" && (
+              <div className="simple-box">
+                <h2 className="section-title">Settings</h2>
+                <p className="muted">Update your email and password.</p>
+
+                {profileLoading && <p>Loading profile...</p>}
+                {profileError && <p className="error-message">{profileError}</p>}
+
+                {settingsMessage && (
+                  <p className={settingsMessage.type === "success" ? "success-message" : "error-message"}>
+                    {settingsMessage.text}
+                  </p>
+                )}
+
+                {!profileLoading && !profileError && (
+                  <form className="settings-form" onSubmit={saveSettings}>
+                    <div className="form-row">
+                      <label className="form-label">Username</label>
+                      <input
+                        className="form-input"
+                        value={profile?.username || ""}
+                        readOnly
+                        aria-label="Username"
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <label className="form-label">Email</label>
+                      <input
+                        className="form-input"
+                        type="email"
+                        value={settingsEmail}
+                        onChange={(e) => setSettingsEmail(e.target.value)}
+                        placeholder="Email"
+                        aria-label="Email"
+                      />
+                    </div>
+
+                    <div className="divider" role="separator" />
+
+                    <div className="form-row">
+                      <label className="form-label">Current Password</label>
+                      <input
+                        className="form-input"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current password"
+                        aria-label="Current password"
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <label className="form-label">New Password</label>
+                      <input
+                        className="form-input"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New password"
+                        aria-label="New password"
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <label className="form-label">Confirm New Password</label>
+                      <input
+                        className="form-input"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        aria-label="Confirm new password"
+                      />
+                    </div>
+
+                    <button type="submit" className="save-btn" disabled={settingsSaving}>
+                      {settingsSaving ? "SAVING..." : "SAVE CHANGES"}
+                    </button>
+                  </form>
                 )}
               </div>
             )}

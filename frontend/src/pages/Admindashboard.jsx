@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import "./AdminDashboard.css";
+import "./Admindashboard.css";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer"
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
+  const overviewSectionRef = useRef(null);
   const teacherSectionRef = useRef(null);
   const courseSectionRef = useRef(null);
   const recordingSectionRef = useRef(null);
@@ -48,6 +49,21 @@ const AdminDashboard = () => {
   // ===== SELECTED COURSE =====
   const [selectedCourseId, setSelectedCourseId] = useState("");
 
+  // ===== ADMIN STATS (CHARTS) =====
+  const [adminStats, setAdminStats] = useState(null);
+  const [adminStatsError, setAdminStatsError] = useState(null);
+
+  const fetchAdminStats = async () => {
+    try {
+      setAdminStatsError(null);
+      const res = await axios.get("/api/admin/stats");
+      setAdminStats(res.data);
+    } catch (err) {
+      console.error("Error fetching admin stats:", err);
+      setAdminStatsError("Failed to load dashboard stats");
+    }
+  };
+
   // ===== FETCH FUNCTIONS =====
   const fetchTeachers = async () => {
     try { const res = await axios.get("/api/teachers"); setTeachers(res.data); } 
@@ -87,7 +103,7 @@ const AdminDashboard = () => {
     fetchTutes(selectedCourseId);
   }, [selectedCourseId]);
 
-  useEffect(() => { fetchTeachers(); fetchCourses(); }, []);
+  useEffect(() => { fetchTeachers(); fetchCourses(); fetchAdminStats(); }, []);
 
   // ===== FORM SUBMITS =====
   const handleTeacherSubmit = async (e) => {
@@ -171,6 +187,72 @@ const AdminDashboard = () => {
     
     <div className="admin-dashboard">
       <h1>Admin Dashboard</h1>
+
+      <nav className="admin-quick-links" aria-label="Admin dashboard quick links">
+        <button type="button" className="quick-link" onClick={() => scrollToSection(overviewSectionRef)}>Overview</button>
+        <button type="button" className="quick-link" onClick={() => scrollToSection(teacherSectionRef)}>Teachers</button>
+        <button type="button" className="quick-link" onClick={() => scrollToSection(courseSectionRef)}>Courses</button>
+        <button type="button" className="quick-link" onClick={() => scrollToSection(recordingSectionRef)}>Recordings</button>
+        <button type="button" className="quick-link" onClick={() => scrollToSection(liveclassSectionRef)}>Live Classes</button>
+        <button type="button" className="quick-link" onClick={() => scrollToSection(tuteSectionRef)}>Tutes</button>
+      </nav>
+
+      {/* ===== CHARTS / STATS ===== */}
+      <section className="admin-stats" ref={overviewSectionRef}>
+        <h2>Overview</h2>
+        {adminStatsError && (
+          <div className="admin-stats-error">{adminStatsError}</div>
+        )}
+
+        <div className="admin-stats-grid2">
+          <div className="stat-card2">
+            <div className="stat-title2">Total Students</div>
+            <div className="stat-value2">{adminStats ? adminStats.totalStudents : "—"}</div>
+            <div className="stat-sub2">All registered students</div>
+          </div>
+
+          <div className="stat-card2">
+            <div className="stat-title2">Revenue This Month</div>
+            <div className="stat-value2">
+              {adminStats
+                ? Number(adminStats.revenueThisMonth || 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : "—"}
+            </div>
+            <div className="stat-sub2">Sum of course prices for enrollments this month</div>
+          </div>
+
+          <div className="stat-card2">
+            <div className="stat-title2">Most Popular Course</div>
+            <div className="stat-value2">
+              {adminStats?.mostPopularCourseName ? adminStats.mostPopularCourseName : "—"}
+            </div>
+            <div className="stat-sub2">
+              {adminStats?.mostPopularCourseEnrollments
+                ? `${adminStats.mostPopularCourseEnrollments} enrollments`
+                : "No enrollments yet"}
+            </div>
+
+            <div className="progress-wrap" aria-hidden="true">
+              {(() => {
+                const total = Number(adminStats?.totalEnrollments || 0);
+                const top = Number(adminStats?.mostPopularCourseEnrollments || 0);
+                const pct = total > 0 ? Math.min(100, Math.round((top / total) * 100)) : 0;
+                return (
+                  <>
+                    <div className="progress-meta">Share: {pct}%</div>
+                    <div className="progress-track">
+                      <div className="progress-bar" style={{ width: `${pct}%` }} />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ===== TEACHERS ===== */}
       <section ref={teacherSectionRef}>

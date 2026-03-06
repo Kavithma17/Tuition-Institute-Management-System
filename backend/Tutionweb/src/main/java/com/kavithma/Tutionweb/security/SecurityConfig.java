@@ -36,6 +36,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/courses/**").permitAll()
                         .requestMatchers("/api/teachers/**").permitAll()
+
+                    // User profile/settings:
+                    .requestMatchers("/api/users/dashboard").authenticated()
+                    .requestMatchers("/api/users/settings").authenticated()
                         .requestMatchers("/api/notes/**").authenticated()
                         .requestMatchers("/api/todos/**").authenticated()
                         .requestMatchers("/api/reminders/**").authenticated()
