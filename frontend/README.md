@@ -10,3 +10,18 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Environment variables
+
+The Student Dashboard AI Quiz generator reads your OpenAI key from a Vite env var.
+
+1) Create a local env file:
+- Copy `./.env.example` to `./.env.local`
+
+2) Set your key:
+- `VITE_OPENAI_API_KEY=sk-...`
+
+3) Restart the dev server:
+- Stop and re-run `npm run dev`
+
+Note: `.env.local` is ignored by git (via `*.local`).
