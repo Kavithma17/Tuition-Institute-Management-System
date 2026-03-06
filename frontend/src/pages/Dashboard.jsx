@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import axiosClient from "../api/axiosClient";
+import { generateALQuiz } from "../api/generateALQuiz";
+import { jsPDF } from "jspdf";
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,6 +45,18 @@ const [reminders, setReminders] = useState([]);
 
   const [enrollNotice, setEnrollNotice] = useState(null);
 
+  // AI Quiz
+  const [quizSubject, setQuizSubject] = useState("Biology");
+  const [quizTopic, setQuizTopic] = useState("Photosynthesis");
+  const [quizDifficulty, setQuizDifficulty] = useState("Medium");
+  const [quizCount, setQuizCount] = useState(5);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState(null);
+  const [quizItems, setQuizItems] = useState([]);
+  const [quizAnswers, setQuizAnswers] = useState([]);
+  const [quizChecked, setQuizChecked] = useState(false);
+  const [quizScore, setQuizScore] = useState(null);
+
   // Settings
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -55,6 +69,125 @@ const [reminders, setReminders] = useState([]);
   const [settingsMessage, setSettingsMessage] = useState(null);
 
   const navigate = useNavigate();
+
+  const handleGenerateQuiz = async (e) => {
+    e.preventDefault();
+    setQuizError(null);
+    setQuizItems([]);
+    setQuizAnswers([]);
+    setQuizChecked(false);
+    setQuizScore(null);
+
+    try {
+      setQuizLoading(true);
+      const items = await generateALQuiz(
+        quizSubject.trim(),
+        quizTopic.trim(),
+        quizDifficulty,
+        Number(quizCount)
+      );
+      setQuizItems(items);
+      setQuizAnswers(Array(items.length).fill(null));
+    } catch (err) {
+      console.error("Quiz generation failed", err);
+      setQuizError(err?.message || "Failed to generate quiz.");
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
+  const selectQuizAnswer = (questionIndex, optionIndex) => {
+    if (quizChecked) return;
+    setQuizAnswers((prev) => {
+      const next = prev.slice();
+      next[questionIndex] = optionIndex;
+      return next;
+    });
+  };
+
+  const checkQuizResults = () => {
+    if (!quizItems.length) return;
+    const score = quizItems.reduce((acc, q, i) => {
+      return acc + (quizAnswers[i] === q.correctIndex ? 1 : 0);
+    }, 0);
+    setQuizScore(score);
+    setQuizChecked(true);
+  };
+
+  const safeFilename = (name) =>
+    String(name || "")
+      .trim()
+      .replace(/[^a-z0-9-_]+/gi, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 80);
+
+  const downloadQuizPdf = () => {
+    if (!quizItems.length) {
+      setQuizError("Generate a quiz first.");
+      return;
+    }
+
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    const margin = 40;
+    const lineHeight = 16;
+    const maxTextWidth = pageWidth - margin * 2;
+
+    let y = margin;
+
+    const addLine = (text, opts = {}) => {
+      const fontSize = opts.fontSize ?? 12;
+      const bold = Boolean(opts.bold);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(fontSize);
+
+      const lines = doc.splitTextToSize(String(text), maxTextWidth);
+      for (const line of lines) {
+        if (y + lineHeight > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += lineHeight;
+      }
+    };
+
+    addLine("A/L Quiz", { bold: true, fontSize: 18 });
+    addLine(`Subject: ${quizSubject}`);
+    addLine(`Topic: ${quizTopic}`);
+    addLine(`Difficulty: ${quizDifficulty}`);
+    addLine(`Questions: ${quizItems.length}`);
+    addLine(`Generated: ${new Date().toLocaleString()}`);
+    if (quizChecked && quizScore != null) {
+      addLine(`Score: ${quizScore}/${quizItems.length}`, { bold: true });
+    }
+
+    y += 8;
+
+    quizItems.forEach((q, idx) => {
+      addLine(`${idx + 1}. ${q.question}`, { bold: true });
+      q.options.forEach((opt, oi) => {
+        const letter = String.fromCharCode(65 + oi);
+        const isCorrect = oi === q.correctIndex;
+        const selected = quizAnswers[idx] === oi;
+        const mark = isCorrect ? "[Correct]" : selected ? "[Selected]" : "";
+        addLine(`   ${letter}. ${opt} ${mark}`.trim());
+      });
+      if (q.explanation) {
+        addLine(`Explanation: ${q.explanation}`);
+      }
+      y += 6;
+    });
+
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = `${safeFilename(quizSubject)}-${safeFilename(quizTopic)}-${safeFilename(
+      quizDifficulty
+    )}-${date}.pdf`;
+    doc.save(filename);
+  };
+
 
   useEffect(() => {
     try {
@@ -164,7 +297,7 @@ const [reminders, setReminders] = useState([]);
     setTodos((prev) => [res.data, ...prev]);
     setTodoText("");
   } catch {
-    alert("Failed to add todo");
+    setEnrollNotice({ type: "error", text: "Failed to add todo" });
   }
 };
 
@@ -180,7 +313,7 @@ const toggleTodo = async (todo) => {
       prev.map((t) => (t.id === todo.id ? res.data : t))
     );
   } catch {
-    alert("Failed to update todo");
+    setEnrollNotice({ type: "error", text: "Failed to update todo" });
   }
 };
 
@@ -189,7 +322,7 @@ const toggleTodo = async (todo) => {
     await axiosClient.delete(`/api/todos/${id}`);
     setTodos((prev) => prev.filter((t) => t.id !== id));
   } catch {
-    alert("Failed to delete todo");
+    setEnrollNotice({ type: "error", text: "Failed to delete todo" });
   }
 };
 
@@ -208,7 +341,7 @@ const toggleTodo = async (todo) => {
     setReminderText("");
     setReminderAt("");
   } catch {
-    alert("Failed to add reminder");
+    setEnrollNotice({ type: "error", text: "Failed to add reminder" });
   }
 };
 
@@ -220,7 +353,7 @@ const toggleTodo = async (todo) => {
     await axiosClient.delete(`/api/reminders/${id}`);
     setReminders((prev) => prev.filter((r) => r.id !== id));
   } catch {
-    alert("Failed to delete reminder");
+    setEnrollNotice({ type: "error", text: "Failed to delete reminder" });
   }
 };
 
@@ -243,7 +376,7 @@ const toggleTodo = async (todo) => {
     setNotes((prev) => [res.data, ...prev]);
     resetNoteForm();
   } catch (e) {
-    alert("Failed to save note");
+    setEnrollNotice({ type: "error", text: "Failed to save note" });
     console.error(e);
   }
 };
@@ -268,7 +401,7 @@ const saveEditNote = async () => {
 
     resetNoteForm();
   } catch (e) {
-    alert("Failed to update note");
+    setEnrollNotice({ type: "error", text: "Failed to update note" });
   }
 };
 const deleteNote = async (id) => {
@@ -276,7 +409,7 @@ const deleteNote = async (id) => {
     await axiosClient.delete(`/api/notes/${id}`);
     setNotes((prev) => prev.filter((n) => n.id !== id));
   } catch {
-    alert("Failed to delete note");
+    setEnrollNotice({ type: "error", text: "Failed to delete note" });
   }
 };
 
@@ -470,6 +603,13 @@ const fetchReminders = async () => {
             onClick={() => setActiveMenu("settings")}
           >
             Settings
+          </li>
+
+          <li
+            className={activeMenu === "aiquiz" ? "active" : ""}
+            onClick={() => setActiveMenu("aiquiz")}
+          >
+            AI Quiz
           </li>
         </ul>
 
@@ -927,6 +1067,143 @@ const fetchReminders = async () => {
                       {settingsSaving ? "SAVING..." : "SAVE CHANGES"}
                     </button>
                   </form>
+                )}
+              </div>
+            )}
+
+            {activeMenu === "aiquiz" && (
+              <div className="simple-box">
+                <h2 className="section-title">AI Quiz Generator</h2>
+                <p className="muted">Generate A/L level MCQs for any topic.</p>
+
+                {quizError && <p className="error-message">{quizError}</p>}
+
+                <form className="settings-form" onSubmit={handleGenerateQuiz}>
+                  <div className="form-row">
+                    <label className="form-label">Subject</label>
+                    <select
+                      className="form-input"
+                      value={quizSubject}
+                      onChange={(e) => setQuizSubject(e.target.value)}
+                      aria-label="Quiz subject"
+                    >
+                      <option value="Biology">Biology</option>
+                      <option value="Chemistry">Chemistry</option>
+                      <option value="Physics">Physics</option>
+                      <option value="ICT">ICT</option>
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <label className="form-label">Topic</label>
+                    <input
+                      className="form-input"
+                      value={quizTopic}
+                      onChange={(e) => setQuizTopic(e.target.value)}
+                      placeholder="e.g., Photosynthesis"
+                      aria-label="Quiz topic"
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <label className="form-label">Difficulty</label>
+                    <select
+                      className="form-input"
+                      value={quizDifficulty}
+                      onChange={(e) => setQuizDifficulty(e.target.value)}
+                      aria-label="Quiz difficulty"
+                    >
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
+                  </div>
+
+                  <div className="form-row">
+                    <label className="form-label">Number of Questions</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={quizCount}
+                      onChange={(e) => setQuizCount(e.target.value)}
+                      aria-label="Number of questions"
+                    />
+                  </div>
+
+                  <button type="submit" className="save-btn" disabled={quizLoading}>
+                    {quizLoading ? "GENERATING..." : "GENERATE QUIZ"}
+                  </button>
+                </form>
+
+                {quizItems.length > 0 && (
+                  <div className="quiz-list" aria-label="Generated quiz">
+                    <div className="quiz-actions">
+                      <div className="quiz-meta">
+                        {quizChecked && quizScore != null
+                          ? `Score: ${quizScore}/${quizItems.length}`
+                          : "Select answers, then check results."}
+                      </div>
+
+                      <div className="quiz-btn-row">
+                        <button
+                          type="button"
+                          className="quiz-file-btn"
+                          onClick={downloadQuizPdf}
+                          disabled={quizLoading || quizItems.length === 0}
+                        >
+                          Download PDF
+                        </button>
+
+                        <button
+                          type="button"
+                          className="quiz-check-btn"
+                          onClick={checkQuizResults}
+                          disabled={quizLoading || quizItems.length === 0}
+                        >
+                          Check Results
+                        </button>
+                      </div>
+                    </div>
+
+                    {quizItems.map((q, idx) => (
+                      <div key={idx} className="quiz-card">
+                        <div className="quiz-q">
+                          {idx + 1}. {q.question}
+                        </div>
+                        <ul className="quiz-options">
+                          {q.options.map((opt, oi) => (
+                            <li key={oi} className="quiz-opt">
+                              <label
+                                className={(() => {
+                                  const selected = quizAnswers[idx] === oi;
+                                  if (!quizChecked) return selected ? "quiz-opt-label quiz-opt-selected" : "quiz-opt-label";
+                                  const isCorrect = oi === q.correctIndex;
+                                  const isWrongSelected = selected && !isCorrect;
+                                  if (isCorrect) return "quiz-opt-label quiz-opt-correct";
+                                  if (isWrongSelected) return "quiz-opt-label quiz-opt-wrong";
+                                  return selected ? "quiz-opt-label quiz-opt-selected" : "quiz-opt-label";
+                                })()}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`q-${idx}`}
+                                  checked={quizAnswers[idx] === oi}
+                                  onChange={() => selectQuizAnswer(idx, oi)}
+                                  disabled={quizChecked}
+                                />
+                                <span className="quiz-opt-text">
+                                  {String.fromCharCode(65 + oi)}. {opt}
+                                </span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                        
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
