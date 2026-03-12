@@ -18,7 +18,7 @@ import java.util.List;
 public class CourseController {
     @Autowired
     public CourseRepository courseRepository;
-    private TeacherRepository teacherRepository;
+   
     @Autowired
     private RecordingRepository recordingRepository;
     @Autowired

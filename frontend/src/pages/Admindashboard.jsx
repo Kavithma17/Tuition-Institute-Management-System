@@ -8,6 +8,9 @@ import { resolvePublicUrl } from "../utils/resolvePublicUrl";
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
+  const [adminNotice, setAdminNotice] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+
   const overviewSectionRef = useRef(null);
   const teacherSectionRef = useRef(null);
   const courseSectionRef = useRef(null);
@@ -63,6 +66,18 @@ const AdminDashboard = () => {
       console.error("Error fetching admin stats:", err);
       setAdminStatsError("Failed to load dashboard stats");
     }
+  };
+
+  const closeAdminNotice = () => {
+    setAdminNotice(null);
+  };
+
+  const openDeleteConfirm = (deleteRequest) => {
+    setPendingDelete(deleteRequest);
+  };
+
+  const closeDeleteConfirm = () => {
+    setPendingDelete(null);
   };
 
   // ===== FETCH FUNCTIONS =====
@@ -127,22 +142,35 @@ const AdminDashboard = () => {
 
  const handleRecordingSubmit = async (e) => {
   e.preventDefault();
-  if (!selectedCourseId) return alert("Select a course!");
+  if (!selectedCourseId) {
+    setAdminNotice({ type: "error", text: "Select a course!" });
+    return;
+  }
 
   try {
-    const payload = {
-      courseId: selectedCourseId,
-      title: recordingForm.title,
-      videoUrl: recordingForm.url,
-      description: recordingForm.description || ""
-    };
-
     if (editingRecordingId) {
       // Update recording
+      const payload = {
+        title: recordingForm.title,
+        videoUrl: recordingForm.url,
+        description: recordingForm.description || "",
+      };
+
       await axios.put(`/api/recordings/${editingRecordingId}`, payload);
     } else {
       // Add new recording
-      await axios.post("/api/recordings", payload);
+      const courseId = selectedCourseId;
+      const title = recordingForm.title;
+      const url = recordingForm.url;
+      const description = recordingForm.description || "";
+
+      // Backend expects @RequestParam values (not JSON body)
+      await axios.post(
+        `/api/recordings?courseId=${encodeURIComponent(courseId)}` +
+          `&title=${encodeURIComponent(title)}` +
+          `&url=${encodeURIComponent(url)}` +
+          `&description=${encodeURIComponent(description)}`
+      );
     }
 
     // Reset form and refresh list
@@ -152,41 +180,115 @@ const AdminDashboard = () => {
 
   } catch (err) {
     console.error("Error adding/updating recording:", err);
-    alert("Failed to save recording. Check console for details.");
+    console.error("Recording API error details:", {
+      message: err?.message,
+      status: err?.response?.status,
+      statusText: err?.response?.statusText,
+      data: err?.response?.data,
+    });
+    setAdminNotice({ type: "error", text: "Failed to save recording." });
   }
 };
 
 
   const handleLiveclassSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCourseId) return alert("Select a course!");
+    if (!selectedCourseId) {
+      setAdminNotice({ type: "error", text: "Select a course!" });
+      return;
+    }
     try {
       if (editingLiveclassId) await axios.put(`/api/liveclasses/${editingLiveclassId}`, { ...liveclassForm });
       else await axios.post(`/api/liveclasses?courseId=${selectedCourseId}&title=${encodeURIComponent(liveclassForm.title)}&meetingUrl=${encodeURIComponent(liveclassForm.meetingUrl)}&dateTime=${encodeURIComponent(liveclassForm.dateTime)}`);
       setLiveclassForm({ title: "", meetingUrl: "", dateTime: "" }); setEditingLiveclassId(null); fetchLiveclasses(selectedCourseId);
-    } catch (err) { console.error(err); }
+      setAdminNotice({ type: "success", text: editingLiveclassId ? "Live class updated successfully!" : "Live class added successfully!" });
+    } catch (err) {
+      console.error(err);
+      setAdminNotice({ type: "error", text: "Failed to save live class." });
+    }
   };
 
   const handleTuteSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedCourseId) return alert("Select a course!");
+    if (!selectedCourseId) {
+      setAdminNotice({ type: "error", text: "Select a course!" });
+      return;
+    }
     try {
       if (editingTuteId) await axios.put(`/api/tutes/${editingTuteId}`, { ...tuteForm });
       else await axios.post(`/api/tutes?courseId=${selectedCourseId}&title=${encodeURIComponent(tuteForm.title)}&fileUrl=${encodeURIComponent(tuteForm.fileUrl)}`);
       setTuteForm({ title: "", fileUrl: "" }); setEditingTuteId(null); fetchTutes(selectedCourseId);
-    } catch (err) { console.error(err); }
+      setAdminNotice({ type: "success", text: editingTuteId ? "Tute updated successfully!" : "Tute added successfully!" });
+    } catch (err) {
+      console.error(err);
+      setAdminNotice({ type: "error", text: "Failed to save tute." });
+    }
   };
 
   // ===== DELETE HANDLERS =====
-  const handleDelete = async (url, id, fetchFunc) => {
-    if (!window.confirm("Are you sure?")) return;
-    try { await axios.delete(`${url}/${id}`); fetchFunc(selectedCourseId); }
-    catch (err) { console.error(err); }
+  const handleDelete = (url, id, fetchFunc, itemLabel = "Item") => {
+    openDeleteConfirm({ url, id, fetchFunc, itemLabel });
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+
+    const { url, id, fetchFunc, itemLabel } = pendingDelete;
+    try {
+      await axios.delete(`${url}/${id}`);
+      fetchFunc(selectedCourseId);
+      setAdminNotice({ type: "success", text: `${itemLabel} deleted successfully!` });
+    } catch (err) {
+      console.error(err);
+      setAdminNotice({ type: "error", text: `Failed to delete ${itemLabel.toLowerCase()}.` });
+    } finally {
+      closeDeleteConfirm();
+    }
   };
 
   return (
     
     <div className="admin-dashboard">
+      {adminNotice && (
+        <div className="enroll-popup-overlay" onClick={closeAdminNotice}>
+          <div
+            className={`enroll-popup ${adminNotice.type}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin message"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="enroll-popup-text">{adminNotice.text}</div>
+            <button type="button" className="enroll-popup-btn" onClick={closeAdminNotice}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div className="enroll-popup-overlay" onClick={closeDeleteConfirm}>
+          <div
+            className="enroll-popup"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete confirmation"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="enroll-popup-text">
+              Are you sure you want to delete this {pendingDelete.itemLabel.toLowerCase()}?
+            </div>
+            <div className="enroll-popup-actions">
+              <button type="button" className="enroll-popup-btn" onClick={closeDeleteConfirm}>
+                Cancel
+              </button>
+              <button type="button" className="enroll-popup-btn enroll-popup-btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <h1>Admin Dashboard</h1>
 
       <nav className="admin-quick-links" aria-label="Admin dashboard quick links">
@@ -269,8 +371,8 @@ const AdminDashboard = () => {
           <thead><tr><th>Name</th><th>Qualification</th><th>Subject</th><th>Photo</th><th>Actions</th></tr></thead>
           <tbody>
             {teachers.map(t => <tr key={t.id}><td>{t.name}</td><td>{t.qualification}</td><td>{t.subject}</td><td>{t.photoUrl ? <img src={resolvePublicUrl(t.photoUrl, { fallback: "/assets/lec.jpg" })} width="50" /> : "No Photo"}</td><td>
-              <button onClick={() => { scrollToSection(teacherSectionRef); setEditingTeacherId(t.id); setTeacherForm(t); }}>Edit</button>
-              <button onClick={() => handleDelete("/api/teachers", t.id, fetchTeachers)}>Delete</button>
+              <button type="button" onClick={() => { scrollToSection(teacherSectionRef); setEditingTeacherId(t.id); setTeacherForm(t); }}>Edit</button>
+              <button type="button" onClick={() => handleDelete("/api/teachers", t.id, fetchTeachers, "Teacher")}>Delete</button>
             </td></tr>)}
           </tbody>
         </table>
@@ -291,8 +393,8 @@ const AdminDashboard = () => {
           <thead><tr><th>Name</th><th>Month</th><th>Price</th><th>Teacher</th><th>Image</th><th>Actions</th></tr></thead>
           <tbody>
             {courses.map(c => <tr key={c.id}><td>{c.classname}</td><td>{c.month}</td><td>{c.price}</td><td>{c.teachername}</td><td>{c.photourl ? <img src={resolvePublicUrl(c.photourl, { fallback: "/assets/class.jpg" })} width="50" /> : "No Image"}</td><td>
-              <button onClick={() => { scrollToSection(courseSectionRef); setEditingCourseId(c.id); setCourseForm(c); }}>Edit</button>
-              <button onClick={() => handleDelete("/api/courses", c.id, fetchCourses)}>Delete</button>
+              <button type="button" onClick={() => { scrollToSection(courseSectionRef); setEditingCourseId(c.id); setCourseForm(c); }}>Edit</button>
+              <button type="button" onClick={() => handleDelete("/api/courses", c.id, fetchCourses, "Course")}>Delete</button>
             </td></tr>)}
           </tbody>
         </table>
@@ -315,8 +417,8 @@ const AdminDashboard = () => {
           <thead><tr><th>Title</th><th>URL</th><th>Description</th><th>Actions</th></tr></thead>
           <tbody>
             {recordings.map(r => <tr key={r.id}><td>{r.title}</td><td><a href={r.videoUrl} target="_blank">Watch</a></td><td>{r.description}</td><td>
-              <button onClick={() => { scrollToSection(recordingSectionRef); setEditingRecordingId(r.id); setRecordingForm({ title: r.title, url: r.videoUrl, description: r.description }); }}>Edit</button>
-              <button onClick={() => handleDelete("/api/recordings", r.id, fetchRecordings)}>Delete</button>
+              <button type="button" onClick={() => { scrollToSection(recordingSectionRef); setEditingRecordingId(r.id); setRecordingForm({ title: r.title, url: r.videoUrl, description: r.description }); }}>Edit</button>
+              <button type="button" onClick={() => handleDelete("/api/recordings", r.id, fetchRecordings, "Recording")}>Delete</button>
             </td></tr>)}
           </tbody>
         </table>
@@ -335,8 +437,8 @@ const AdminDashboard = () => {
           <thead><tr><th>Title</th><th>URL</th><th>DateTime</th><th>Actions</th></tr></thead>
           <tbody>
             {liveclasses.map(l => <tr key={l.id}><td>{l.title}</td><td><a href={l.meetingUrl} target="_blank">Join</a></td><td>{l.dateTime}</td><td>
-              <button onClick={() => { scrollToSection(liveclassSectionRef); setEditingLiveclassId(l.id); setLiveclassForm({ title: l.title, meetingUrl: l.meetingUrl, dateTime: l.dateTime }); }}>Edit</button>
-              <button onClick={() => handleDelete("/api/liveclasses", l.id, fetchLiveclasses)}>Delete</button>
+              <button type="button" onClick={() => { scrollToSection(liveclassSectionRef); setEditingLiveclassId(l.id); setLiveclassForm({ title: l.title, meetingUrl: l.meetingUrl, dateTime: l.dateTime }); }}>Edit</button>
+              <button type="button" onClick={() => handleDelete("/api/liveclasses", l.id, fetchLiveclasses, "Live class")}>Delete</button>
             </td></tr>)}
           </tbody>
         </table>
@@ -354,8 +456,8 @@ const AdminDashboard = () => {
           <thead><tr><th>Title</th><th>File</th><th>Actions</th></tr></thead>
           <tbody>
             {tutes.map(t => <tr key={t.id}><td>{t.title}</td><td><a href={t.fileUrl} target="_blank">Download</a></td><td>
-              <button onClick={() => { scrollToSection(tuteSectionRef); setEditingTuteId(t.id); setTuteForm({ title: t.title, fileUrl: t.fileUrl }); }}>Edit</button>
-              <button onClick={() => handleDelete("/api/tutes", t.id, fetchTutes)}>Delete</button>
+              <button type="button" onClick={() => { scrollToSection(tuteSectionRef); setEditingTuteId(t.id); setTuteForm({ title: t.title, fileUrl: t.fileUrl }); }}>Edit</button>
+              <button type="button" onClick={() => handleDelete("/api/tutes", t.id, fetchTutes, "Tute")}>Delete</button>
             </td></tr>)}
           </tbody>
         </table>
