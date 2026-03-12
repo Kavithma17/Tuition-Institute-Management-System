@@ -1,11 +1,11 @@
 package com.kavithma.Tutionweb;
 
-import com.kavithma.Tutionweb.model.Course;
+
 import com.kavithma.Tutionweb.model.Student;
-import com.kavithma.Tutionweb.model.Teacher;
-import com.kavithma.Tutionweb.repository.CourseRepository;
+
+
 import com.kavithma.Tutionweb.repository.StudentRepository;
-import com.kavithma.Tutionweb.repository.TeacherRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -20,10 +20,8 @@ public class TutionwebApplication implements CommandLineRunner {
 
     @Autowired
 	private StudentRepository studentRepository;
-	@Autowired
-	private TeacherRepository teacherRepository;
-	@Autowired
-	private CourseRepository courseRepository;
+	
+
 	@Override
 	public void run(String... args) throws Exception {
 

@@ -20,14 +20,7 @@ public class DashboardController {
 
 
 
-    @Autowired
-    private RecordingRepository recordingRepository;
-
-    @Autowired
-    private TutesRepository tutesRepository;
-
-    @Autowired
-    private LiveclassRepository liveclassRepository;
+   
 
     @GetMapping("/{userId}")
     public List<DashboardDTO> getStudentDashboard(@PathVariable Long userId) {
